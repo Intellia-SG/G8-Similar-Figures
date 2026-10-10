@@ -1,0 +1,193 @@
+/* src/components/gamification/KingdomMap.css */
+.kingdom-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.kingdom-district-card {
+  background: rgba(22, 25, 52, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 8px 10px;
+  min-height: 105px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.kingdom-district-card:hover:not(.locked) {
+  transform: translateY(-2px);
+  border-color: #00e676;
+  box-shadow: 0 6px 18px rgba(0, 230, 118, 0.2);
+}
+
+.kingdom-district-card.current {
+  border: 1.5px solid #00e676;
+  background: rgba(0, 230, 118, 0.05);
+  box-shadow: 0 0 18px rgba(0, 230, 118, 0.25);
+}
+
+.kingdom-district-card.completed {
+  border-color: rgba(34, 197, 94, 0.4);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.kingdom-district-card.locked {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+/* Card Header: W badge + Q range */
+.card-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.card-w-badge {
+  background: rgba(255, 255, 255, 0.07);
+  color: #94a3b8;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.card-q-range {
+  color: #38bdf8;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+
+/* Center Icon Area */
+.card-center-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  margin: 2px 0;
+}
+
+/* Radar Target Icon (concentric rings) */
+.radar-target-wrapper {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.radar-target-circle.outer {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #00e676;
+  border-radius: 50%;
+  opacity: 0.85;
+  box-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+}
+
+.radar-target-circle.middle {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #00e676;
+  border-radius: 50%;
+  opacity: 0.95;
+}
+
+.radar-target-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #00e676;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #00e676;
+}
+
+.card-locked-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.card-complete-badge {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+/* World Name */
+.card-world-name {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.84rem;
+  color: #ffffff;
+  line-height: 1.2;
+  margin: 2px 0;
+  text-align: center;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bottom Status */
+.card-bottom-status {
+  width: 100%;
+  text-align: center;
+}
+
+.cta-play {
+  color: #00e676;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.status-locked {
+  color: #64748b;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.status-score {
+  color: #86efac;
+  font-family: var(--font-display);
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .kingdom-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+  }
+  .card-world-name {
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 680px) {
+  .kingdom-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+}
