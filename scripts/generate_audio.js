@@ -1,6 +1,6 @@
 // scripts/generate_audio.js
-// Offline pre-generation script for ElevenLabs narration audio files for CongruenceQuest.
-// Strictly follows audio_generation_pipeline (5).md specifications.
+// Offline pre-generation script for ElevenLabs narration audio files for SimilarQuest.
+// Strictly follows audio_generation_pipeline (5).md specifications and PRD §11 rules.
 
 import fs from 'fs';
 import path from 'path';
@@ -48,71 +48,125 @@ const VOICE_SETTINGS = {
 
 const phrases = [
   // ─── INTRO & WONDER ────────────────────────────────────────────────────────
-  { text: "Welcome to CongruenceQuest! Let's investigate the backstage match mystery!", style: 'statement' },
-  { text: "Two stage flats look identical from the audience, but you can only afford to measure three things.", style: 'statement' },
-  { text: "Which three measurements would guarantee that the two flats match exactly?", style: 'question' },
-  { text: "Let's investigate how corresponding parts and congruence tests work!", style: 'celebration' },
+  { text: "Welcome to SimilarQuest! Let's investigate the scale-model paint mystery!", style: 'statement' },
+  { text: "A landmark statue needs 40 litres of paint to cover its surface.", style: 'statement' },
+  { text: "The club builds a scale model where every length is one-twentieth of the real statue.", style: 'statement' },
+  { text: "How much paint does the model need — about 2 litres, a tiny fraction of a litre, or something else?", style: 'question' },
+  { text: "Let's investigate how scaling lengths changes perimeter, area, and volume!", style: 'celebration' },
 
   // ─── STORY PHASE: PANEL 1 ────────────────────────────────────────────────
-  { text: "Backstage at the school musical, Li Ting and Haikal need to construct identical twin stage flats for the left and right wings of the theatre.", style: 'statement' },
-  { text: "Li Ting glances across the workshop and smiles: Look, they look identical to the audience!", style: 'statement' },
-  { text: "But Haikal shakes his head: Looking identical from row ten is not enough! Every joint has to fit the backstage track. We need exact proof, but we only have time to take three measurements!", style: 'emphasis' },
+  { text: "At the school scale-model exhibition hall, Dania and Kabir are building a miniature model of a landmark statue.", style: 'statement' },
+  { text: "Dania holds a can of spray paint: The original statue needs 40 litres of paint. Our model is at one-twentieth scale, so let's just halve the paint twice — maybe 2 litres?", style: 'statement' },
+  { text: "Kabir pauses: Wait Dania! Scale models must be the exact same shape at a different size. Double the length does not mean double the paint!", style: 'emphasis' },
 
   // ─── STORY PHASE: PANEL 2 ────────────────────────────────────────────────
-  { text: "Echo the Mynah swoops down with a blueprint.", style: 'statement' },
-  { text: "Two figures are congruent if they have the exact same shape and size, even if one flat is turned sideways or flipped over like a mirror reflection!", style: 'statement' },
-  { text: "Writing triangle A B C is congruent to triangle P Q R tells us the exact correspondence: vertex A matches P, vertex B matches Q, and vertex C matches R. The vertex order is the law!", style: 'emphasis' },
+  { text: "Otto the Otter swims over with an otter family blueprint.", style: 'statement' },
+  { text: "Two figures are similar if they have the exact same shape: corresponding angles are equal, and corresponding sides are in the same ratio!", style: 'statement' },
+  { text: "The scale factor from figure A to figure B is length in B divided by matching length in A. When writing triangle A B C is similar to triangle P Q R, vertex A matches P, B matches Q, and C matches R. Always state your scale factor with its direction!", style: 'emphasis' },
 
   // ─── STORY PHASE: PANEL 3 ────────────────────────────────────────────────
-  { text: "Haikal holds up two triangular timber frames. We do not need to measure all six parts! Three matching pieces are enough, but only if they are the right three.", style: 'statement' },
-  { text: "Matching two sides and an angle that is not between them lets the frame swing into two different shapes! And three angles can make a tiny prop and a giant flat!", style: 'thinking' },
-  { text: "The only five valid tests are side side side, side angle side, angle side angle, angle angle side, and right angle hypotenuse side.", style: 'statement' },
+  { text: "Kabir draws on the whiteboard: For general polygons, checking angles alone or sides alone is not enough! A rectangle and a square have four 90 degree angles, but their sides are not in proportion. Two rhombuses can have matching side ratios, but different angles!", style: 'statement' },
+  { text: "Otto adds: For triangles, three shortcuts work: angle angle — two equal angle pairs; side side side — all three side pairs proportional; and side angle side — two proportional sides with the included angle equal.", style: 'statement' },
 
   // ─── STORY PHASE: PANEL 4 ────────────────────────────────────────────────
-  { text: "Curtain call is in ten minutes! Two large set pieces overlap across the centre stage, sharing a hidden centre beam.", style: 'statement' },
-  { text: "Li Ting spots it: That shared beam is a common side for both triangles!", style: 'statement' },
-  { text: "Together, the crew builds a watertight three-step argument with geometric reasons, states the side angle side test in brackets, and deduces the missing timber length. The show goes on!", style: 'celebration' },
+  { text: "The exhibition opening is here! Dania discovers the secret: Length scales by the scale factor, but area scales by the scale factor squared!", style: 'statement' },
+  { text: "Since the statue is scaled by one-twentieth, its surface area scales by one-twentieth squared, which is one over four hundred. That 40-litre paint job only needs 0.1 litres of paint for the model!", style: 'statement' },
+  { text: "And the sand volume in the base scales by the scale factor cubed! With our scale drawing and map distance verified, the grand model exhibition is open!", style: 'celebration' },
 
-  // ─── SIMULATE STATION INTROS ─────────────────────────────────────────────
-  { text: "Welcome to Station A — The Pin Board!", style: 'instruction' },
-  { text: "Pin three chosen parts on the triangle frame. Wiggle the free vertex to see whether the frame is locked into one unique triangle, or can swing into multiple shapes!", style: 'instruction' },
-  { text: "Welcome to Station B — Cut the Copy!", style: 'instruction' },
-  { text: "A target stage flat has hidden measurements. Choose your test, adjust the measurements with the steppers, and test if your cut copy fits the target flat overlay!", style: 'instruction' },
-  { text: "Welcome to Station C — The Full Rehearsal!", style: 'instruction' },
-  { text: "Separate the overlapping stage panels, mark the hidden shared side, choose the congruence test, and arrange the complete proof chain in logical order!", style: 'instruction' },
-  { text: "Welcome to Station D — Spot the Bad Match!", style: 'instruction' },
-  { text: "A fellow stagehand's argument contains a seeded geometric flaw. Tap the flawed step, identify why it fails, and select the valid mathematical correction!", style: 'instruction' },
+  // ─── SIMULATE STATIONS INTROS ────────────────────────────────────────────
+  { text: "Welcome to Station A — The Scale Lab!", style: 'instruction' },
+  { text: "Drag the scale slider to see lengths scale by k and area by k squared. Then toggle Break It to see how non-uniform stretching destroys similarity!", style: 'instruction' },
 
-  // ─── FEEDBACK & HINTS ────────────────────────────────────────────────────
-  { text: "Spot on! That's correct! 🎉", style: 'celebration' },
+  { text: "Welcome to Station B — Scale to Fit!", style: 'instruction' },
+  { text: "Target the scale factor so the miniature model fits within the exhibition constraint for height, base area, or water volume!", style: 'instruction' },
+
+  { text: "Welcome to Station C — The Full Exhibit!", style: 'instruction' },
+  { text: "Separate the overlapping triangles, mark equal corresponding angles with reasons, choose the similarity test, and deduce unknown lengths and area ratios!", style: 'instruction' },
+
+  { text: "Welcome to Station D — Spot the Bad Scale!", style: 'instruction' },
+  { text: "A club member's notebook contains a seeded scaling error. Tap the flawed step, identify why it fails, and select the valid mathematical correction!", style: 'instruction' },
+
+  // ─── PRACTICE & FEEDBACK ──────────────────────────────────────────────────
+  { text: "Perfect proportion streak! Ten in a row with absolute precision! 🔥", style: 'celebration' },
+  { text: "Steady scaling! Five in a row! 📏", style: 'celebration' },
   { text: "Awesome! Three in a row! ⭐", style: 'celebration' },
-  { text: "Smooth scene change! Five in a row! 🎭", style: 'celebration' },
-  { text: "Standing ovation! Ten in a row without missing a cue! 🔥", style: 'celebration' },
-  { text: "Not quite — check the hint, inspect the marked parts carefully, and try again! 💡", style: 'thinking' },
-  { text: "Here's your first clue! Count how many sides and how many angles are marked equal.", style: 'encouragement' },
-  { text: "Here's your final hint! Check whether the angle is between the two sides, or whether the side is between the two angles.", style: 'encouragement' },
+  { text: "Spot on! That's correct! 🎉", style: 'celebration' },
+  { text: "Not quite — check the hint, check whether it scales by k or k squared, and try again! 💡", style: 'thinking' },
+  { text: "Here's your first clue! Check the direction of scaling and see if corresponding parts match.", style: 'encouragement' },
+  { text: "Here's your final hint! Remember that lengths scale by k, areas scale by k squared, and volumes scale by k cubed.", style: 'encouragement' },
 
-  // ─── DISTRICT & BOSS BATTLES ─────────────────────────────────────────────
-  { text: "World Complete! Spectacular job on this congruence world! 🌟", style: 'celebration' },
-  { text: "The Boss Battle begins! Answer correctly to defeat the boss and claim your backstage badge!", style: 'emphasis' },
-  { text: "Encore! You defeated the boss and claimed the World Badge! 👑", style: 'celebration' },
+  // ─── WORLD COMPLETE & BOSS ────────────────────────────────────────────────
+  { text: "World Complete! Spectacular job on this scale-model world! 🌟", style: 'celebration' },
+  { text: "The Boss Battle begins! Answer correctly to defeat the boss and claim your scale badge!", style: 'emphasis' },
+  { text: "Replica Approved! You defeated the boss and claimed the World Badge! 🏅", style: 'celebration' },
 
-  // ─── REFLECT PHASE ───────────────────────────────────────────────────────
-  { text: "Welcome to the Reflect Phase! Let's review the headline congruence misconceptions and check your scorecard! 📓", style: 'statement' },
-  { text: "Outstanding! You have mastered triangle congruence tests, corresponding parts, and geometric deduction! You are a true Stage Master! 🏆", style: 'celebration' },
+  // ─── REFLECT PHASE ────────────────────────────────────────────────────────
+  { text: "Welcome to the Reflect Phase! Let's review the headline similarity misconceptions and check your scorecard! 📓", style: 'statement' },
+  { text: "Outstanding! You have mastered similar figures, scale factors, triangle tests, and area-volume scaling! You are a true Master Model Maker! 🏆", style: 'celebration' },
+
+  // ─── INTRO SCREEN DIALOGUES ───────────────────────────────────────────────
+  { text: "Welcome to SimilarQuest! Master scale factors, triangle tests, and model scaling!", style: 'statement' },
+  { text: "Hi! I'm Otto the Otter. Ready to join Dania and Kabir at the scale-model exhibition hall, find scale factors, test similarity, and discover why double length means four times the paint?", style: 'statement' },
+
+  // ─── SIMULATION STATIONS TAKEAWAYS & COMPLETIONS ───────────────────────────
+  { text: "Notice that when lengths scale by k, the perimeter scales by k and area scales by k squared. When we break uniformity, angles change and similarity is destroyed!", style: 'thinking' },
+  { text: "Model fitted to precision! The scale factor meets all height, area, and volume constraints!", style: 'celebration' },
+  { text: "Full exhibit solved! The overlapping triangles are separated, proven similar by angle angle, and all lengths and area ratios verified!", style: 'celebration' },
+  { text: "Error spotted and corrected! Always use multiplicative scale factors and square for area!", style: 'celebration' },
+
+  // ─── PLAY PHASE EXTRA DIALOGUES & BOSS DEFEAT ─────────────────────────────
+  { text: "Practice Phase Complete! You have explored all 10 scale-model worlds!", style: 'celebration' },
+  { text: "The boss was too tricky this time! Review the similarity and scaling rules and challenge the boss again!", style: 'thinking' },
+
+  // ─── 10 WORLD BOSS CHALLENGE DIALOGUES ────────────────────────────────────
+  { text: "The Stretchy Mirror challenges you! Show that you understand what makes figures similar!", style: 'emphasis' },
+  { text: "The Mislabelled Model Kit challenges you! Match every corresponding vertex and side!", style: 'emphasis' },
+  { text: "The Backwards Ratio challenges you! State the scale factor in the correct direction!", style: 'emphasis' },
+  { text: "The Missing Piece challenges you! Use multiplicative reasoning to find the unknown length!", style: 'emphasis' },
+  { text: "The Half-Right Replica challenges you! Remember that polygons require both equal angles and proportional sides!", style: 'emphasis' },
+  { text: "The Test Gatekeeper challenges you! Apply angle angle, side side side, or side angle side!", style: 'emphasis' },
+  { text: "The Hidden Mini challenges you! Uncover the hidden similar triangles and find the unknown side!", style: 'emphasis' },
+  { text: "The Size Squasher challenges you! Scale lengths by k, areas by k squared, and volumes by k cubed!", style: 'emphasis' },
+  { text: "The Map Mix-Up challenges you! Master map scales and scale drawings!", style: 'emphasis' },
+  { text: "The Exhibition Curator challenges you! Prove your mastery of all similar figures concepts!", style: 'emphasis' },
+
+  // ─── REFLECT QUESTIONS & MASCOT ───────────────────────────────────────────
+  { text: "Let's check your key takeaways and review your scorecard!", style: 'thinking' },
+  { text: "A miniature model has length scale factor k = 1/10 of the original building. Dania thinks the model's floor area will also be 1/10 of the original. What is the actual area ratio?", style: 'question' },
+  { text: "A scale model triangle has side 4 cm matching a real 12 cm side. Another real side is 15 cm. Dania says the matching model side is 7 cm. Kabir says it is 5 cm. Who is right?", style: 'question' },
+  { text: "Two quadrilaterals both have four 90 degree angles. Are they similar?", style: 'question' },
+
+  // ─── GEOMETRIC REASONS & STEP EXPLANATIONS ────────────────────────────────
+  { text: "because of the angle, angle similarity criterion", style: 'statement' },
+  { text: "because all three pairs of corresponding sides are in the same ratio", style: 'statement' },
+  { text: "because two pairs of sides are in the same ratio and the angle between them is equal", style: 'statement' },
+  { text: "because corresponding sides of similar triangles are proportional", style: 'statement' },
+  { text: "because corresponding angles of similar triangles are equal", style: 'statement' },
+  { text: "using the scale factor from figure A to figure B", style: 'statement' },
+  { text: "because area scales by the scale factor squared", style: 'statement' },
+  { text: "because volume scales by the scale factor cubed", style: 'statement' },
+  { text: "because vertically opposite angles are equal", style: 'statement' },
+  { text: "because alternate angles are equal when lines are parallel", style: 'statement' },
+  { text: "because corresponding angles are equal when lines are parallel", style: 'statement' },
+  { text: "because interior angles of a triangle sum to 180 degrees", style: 'statement' },
 ];
 
-const outputDir = './public/assets/audio';
-if (!fs.existsSync(outputDir)) {
-  fs.mkdirSync(outputDir, { recursive: true });
-}
-
 function cleanString(str) {
-  return str.toLowerCase().replace(/[^a-z0-9]/g, '_').substring(0, 45).replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return str
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .slice(0, 50);
 }
 
 async function main() {
-  console.log(`\n🎙️ Starting ElevenLabs Audio Generation Pipeline`);
+  const outputDir = path.resolve('public/assets/audio');
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+
+  console.log(`\n🎙️ Starting ElevenLabs Audio Generation Pipeline for SimilarQuest`);
   console.log(`Voice ID: ${VOICE_ID} | Model: ${VOICE_MODEL}`);
   console.log(`Total phrases to process: ${phrases.length}\n`);
 
@@ -169,10 +223,10 @@ async function main() {
   }
 
   // Write mapping to src/utils/audioMap.js
-  const mapContent = `// Auto-generated by generate_audio.js\n// Static asset mapping for offline generated narration phrases in CongruenceQuest\n\nexport const audioMap = ${JSON.stringify(mapping, null, 2)};\n\nexport default audioMap;\n`;
+  const mapContent = `// Auto-generated by generate_audio.js\n// Static asset mapping for offline generated narration phrases in SimilarQuest\n\nexport const audioMap = ${JSON.stringify(mapping, null, 2)};\n\nexport default audioMap;\n`;
   fs.writeFileSync('./src/utils/audioMap.js', mapContent);
   console.log("\n✨ Audio mapping updated in src/utils/audioMap.js!");
-  console.log("🎉 Audio generation completed successfully!\n");
+  console.log("🎉 Audio script processing completed successfully!\n");
 }
 
 main().catch(console.error);

@@ -6,7 +6,7 @@
  */
 
 import { frac, mul, div, pow, eq, cmp, toDecimal, toDisplay } from './ratio.js';
-import { areSimilar, scaleFactor, classifyTriangleMarks, verdict, lengthScale, areaScale, volumeScale, mapConvert, similarityStatement } from './similarityMath.js';
+import { areSimilar, scaleFactor, classifyTriangleMarks, verdict, lengthScale, areaScale, volumeScale, mapConvert } from './similarityMath.js';
 import { embeddedFigure } from './similarityDiagram.js';
 
 export const misconceptions = {
@@ -23,19 +23,6 @@ export const misconceptions = {
   mapUnitSlip: (correct, factor = 10) => correct * factor,
 };
 
-// Curated clean numbers per TRD §4.4
-const CLEAN_SCALE_FACTORS = [
-  frac(2, 1),
-  frac(3, 1),
-  frac(4, 1),
-  frac(1, 2),
-  frac(1, 3),
-  frac(3, 2),
-  frac(2, 3),
-  frac(5, 2),
-  frac(2, 5),
-];
-
 function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -47,6 +34,34 @@ function shuffle(arr) {
     [res[i], res[j]] = [res[j], res[i]];
   }
   return res;
+}
+
+/**
+ * Ensures strictly unique 4 options. If any distractors collide, replaces with safe fallback.
+ */
+function makeFourOptions(correct, distractors, fallbackGen) {
+  const set = new Set([correct]);
+  const result = [correct];
+
+  for (const d of distractors) {
+    if (d && !set.has(d)) {
+      set.add(d);
+      result.push(d);
+      if (result.length === 4) break;
+    }
+  }
+
+  let counter = 1;
+  while (result.length < 4) {
+    const fb = fallbackGen ? fallbackGen(counter) : `Option ${counter}`;
+    if (!set.has(fb)) {
+      set.add(fb);
+      result.push(fb);
+    }
+    counter++;
+  }
+
+  return shuffle(result);
 }
 
 /**
@@ -63,7 +78,6 @@ export function generateSimilarOrNotItem(id) {
     w2 = Math.round(w1 * toDecimal(k));
     h2 = Math.round(h1 * toDecimal(k));
   } else {
-    // Distractor: sides not in one ratio (e.g. w scaled by k, h by k + 1)
     w2 = Math.round(w1 * toDecimal(k));
     h2 = Math.round(h1 * toDecimal(k)) + pick([2, 3]);
   }
@@ -79,11 +93,11 @@ export function generateSimilarOrNotItem(id) {
 
   const distractor2 = isSimilar
     ? `Only if their areas are also in the ratio ${toDisplay(k)}`
-    : `Yes — the sides differ by the same added amount`;
+    : `Yes — the sides differ by an added amount, so they must be similar`;
 
-  const distractor3 = `Cannot tell without measuring the diagonal`;
+  const distractor3 = `Cannot tell without measuring the diagonals`;
 
-  const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3]);
 
   return {
     id: `w0_q${id}`,
@@ -110,9 +124,6 @@ export function generateSimilarOrNotItem(id) {
  * World 1: Matching Sides and Angles (`corresponding-parts-and-similarity-statements`)
  */
 export function generateStatementItem(id) {
-  const letters = ['A', 'B', 'C', 'P', 'Q', 'R'];
-  const t1 = ['A', 'B', 'C'];
-  // Permutation for corresponding vertices
   const perm = pick([
     ['P', 'Q', 'R'],
     ['Q', 'R', 'P'],
@@ -122,21 +133,27 @@ export function generateStatementItem(id) {
 
   const statement = `△ABC ∼ △${perm.join('')}`;
   const sideAsk = pick([
-    { s1: 'AB', s2: `${perm[0]}${perm[1]}`, v1: 'A', v2: perm[0] },
-    { s1: 'BC', s2: `${perm[1]}${perm[2]}`, v1: 'B', v2: perm[1] },
-    { s1: 'AC', s2: `${perm[0]}${perm[2]}`, v1: 'C', v2: perm[2] },
+    { s1: 'AB', s2: `${perm[0]}${perm[1]}` },
+    { s1: 'BC', s2: `${perm[1]}${perm[2]}` },
+    { s1: 'AC', s2: `${perm[0]}${perm[2]}` },
   ]);
 
   const questionText = `Given the similarity statement ${statement}, which side in the second triangle corresponds to side ${sideAsk.s1}?`;
   const correctAnswer = sideAsk.s2;
 
-  // Distractors
-  const otherSides = [`${perm[0]}${perm[1]}`, `${perm[1]}${perm[2]}`, `${perm[0]}${perm[2]}`].filter(s => s !== sideAsk.s2);
-  const distractor1 = otherSides[0] || 'PR';
-  const distractor2 = otherSides[1] || 'PQ';
-  const distractor3 = `${perm[2]}${perm[1]}`; // reversed
+  const otherSides = [
+    `${perm[0]}${perm[1]}`,
+    `${perm[1]}${perm[2]}`,
+    `${perm[0]}${perm[2]}`,
+    `${perm[2]}${perm[1]}`,
+    `${perm[1]}${perm[0]}`,
+  ];
 
-  const options = shuffle(Array.from(new Set([correctAnswer, distractor1, distractor2, distractor3])));
+  const options = makeFourOptions(
+    correctAnswer,
+    otherSides.filter(s => s !== correctAnswer),
+    (c) => `Side ${c}`
+  );
 
   return {
     id: `w1_q${id}`,
@@ -151,7 +168,7 @@ export function generateStatementItem(id) {
     hint2: `Find the positions of letters ${sideAsk.s1[0]} and ${sideAsk.s1[1]} in the second triangle name.`,
     visualData: {
       statement,
-      t1,
+      t1: ['A', 'B', 'C'],
       t2: perm,
     },
   };
@@ -159,27 +176,36 @@ export function generateStatementItem(id) {
 
 /**
  * World 2: Find the Scale Factor (`find-scale-factor`)
+ * Curated integer pairs (sA, sB) to avoid raw float decimals
  */
-export function generateScaleFactorItem(id) {
-  const k = pick([frac(2, 1), frac(3, 1), frac(3, 2), frac(5, 2), frac(1, 2), frac(1, 3), frac(2, 3), frac(2, 5)]);
-  const sA = pick([4, 6, 8, 10, 12]);
-  const sB = toDecimal(mul(sA, k));
-  const isEnlargement = cmp(k, 1) > 0;
-  const isReduction = cmp(k, 1) < 0;
+const SCALE_FACTOR_PAIRS = [
+  { sA: 6, sB: 15, k: frac(5, 2) },
+  { sA: 4, sB: 6,  k: frac(3, 2) },
+  { sA: 6, sB: 4,  k: frac(2, 3) },
+  { sA: 10, sB: 4, k: frac(2, 5) },
+  { sA: 4, sB: 8,  k: frac(2, 1) },
+  { sA: 6, sB: 18, k: frac(3, 1) },
+  { sA: 10, sB: 5, k: frac(1, 2) },
+  { sA: 12, sB: 4, k: frac(1, 3) },
+];
 
+export function generateScaleFactorItem(id) {
+  const pair = pick(SCALE_FACTOR_PAIRS);
   const direction = pick(['A to B', 'B to A']);
-  const actualK = direction === 'A to B' ? k : frac(k.d, k.n);
+
+  const actualK = direction === 'A to B' ? pair.k : frac(pair.k.d, pair.k.n);
   const actualType = cmp(actualK, 1) > 0 ? 'an enlargement' : cmp(actualK, 1) < 0 ? 'a reduction' : 'congruent';
 
-  const questionText = `A model maker has two similar figures, A and B. Side in figure A is ${sA} cm, and the matching side in figure B is ${sB} cm. What is the scale factor from ${direction === 'A to B' ? 'figure A to figure B' : 'figure B to figure A'}?`;
+  const questionText = `A model maker has two similar figures, A and B. Side in figure A is ${pair.sA} cm, and the matching side in figure B is ${pair.sB} cm. What is the scale factor from ${direction === 'A to B' ? 'figure A to figure B' : 'figure B to figure A'}?`;
 
   const correctAnswer = `${toDisplay(actualK)}, ${actualType}`;
   const invK = frac(actualK.d, actualK.n);
-  const distractor1 = `${toDisplay(invK)}, ${cmp(invK, 1) > 0 ? 'an enlargement' : 'a reduction'}`; // reversed direction
-  const distractor2 = `${toDisplay(actualK)}, ${actualType === 'an enlargement' ? 'a reduction' : 'an enlargement'}`; // wrong label
-  const distractor3 = `${sB - sA > 0 ? '+' : ''}${sB - sA} cm`; // additive misconception
+  const distractor1 = `${toDisplay(invK)}, ${cmp(invK, 1) > 0 ? 'an enlargement' : 'a reduction'}`;
+  const distractor2 = `${toDisplay(actualK)}, ${actualType === 'an enlargement' ? 'a reduction' : 'an enlargement'}`;
+  const diff = direction === 'A to B' ? pair.sB - pair.sA : pair.sA - pair.sB;
+  const distractor3 = `${diff > 0 ? '+' : ''}${diff} cm (difference)`;
 
-  const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${c}/2, an enlargement`);
 
   return {
     id: `w2_q${id}`,
@@ -193,8 +219,8 @@ export function generateScaleFactorItem(id) {
     hint1: "Scale factor from X to Y is always (length in Y) divided by (length in X).",
     hint2: "A scale factor greater than 1 is an enlargement; less than 1 is a reduction.",
     visualData: {
-      sideA: sA,
-      sideB: sB,
+      sideA: pair.sA,
+      sideB: pair.sB,
       direction,
       k: actualK,
     },
@@ -205,22 +231,21 @@ export function generateScaleFactorItem(id) {
  * World 3: Missing Lengths (`find-unknown-lengths-similar`)
  */
 export function generateUnknownLengthItem(id) {
-  const k = pick([frac(2, 1), frac(3, 1), frac(3, 2), frac(5, 2)]);
-  const sA1 = pick([4, 6, 8, 10]);
-  const sB1 = toDecimal(mul(sA1, k));
-  const sA2 = pick([6, 8, 10, 12]);
-  const sB2 = toDecimal(mul(sA2, k)); // correct answer
+  const kVal = pick([2, 3]);
+  const sA1 = pick([4, 6]);
+  const sB1 = sA1 * kVal;
+  const sA2 = pick([8, 10]);
+  const sB2 = sA2 * kVal; // correct answer
 
   const questionText = `△ABC ∼ △PQR with AB = ${sA1} cm, matching side PQ = ${sB1} cm, and BC = ${sA2} cm. Find the length of QR.`;
   const correctAnswer = `${sB2} cm`;
 
-  // Distractors
   const diff = sB1 - sA1;
-  const distractor1 = `${sA2 + diff} cm`; // Additive misconception (adding difference instead of multiplying by k)
-  const distractor2 = `${toDecimal(div(sA2, k)).toFixed(1).replace('.0', '')} cm`; // Inverted division
-  const distractor3 = `${sB1} cm`; // Same as first side
+  const distractor1 = `${sA2 + diff} cm`; // additive misconception
+  const distractor2 = `${sA2 * (kVal + 1)} cm`;
+  const distractor3 = `${sA2 + 1} cm`;
 
-  const options = shuffle(Array.from(new Set([correctAnswer, distractor1, distractor2, distractor3])));
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${sB2 + c * 2} cm`);
 
   return {
     id: `w3_q${id}`,
@@ -230,7 +255,7 @@ export function generateUnknownLengthItem(id) {
     questionText,
     options,
     correctAnswer,
-    explanation: `Find the scale factor: PQ / AB = ${sB1} / ${sA1} = ${toDisplay(k)}. Then multiply the matching side BC: QR = BC × ${toDisplay(k)} = ${sA2} × ${toDisplay(k)} = ${sB2} cm. Never add the difference!`,
+    explanation: `Find the scale factor: PQ / AB = ${sB1} / ${sA1} = ${kVal}. Then multiply the matching side BC: QR = BC × ${kVal} = ${sA2} × ${kVal} = ${sB2} cm. Never add the difference!`,
     hint1: "Find the scale factor by dividing the known matching side pair.",
     hint2: "Multiply BC by this scale factor (do not add the difference).",
     visualData: {
@@ -244,7 +269,7 @@ export function generateUnknownLengthItem(id) {
  * World 4: Both Conditions (`are-polygons-similar`)
  */
 export function generatePolygonSimilarityItem(id) {
-  const kind = pick(['rectangle-square', 'rhombus-square', 'proportional-sides-different-angles']);
+  const kind = pick(['rectangle-square', 'rhombus-square']);
 
   if (kind === 'rectangle-square') {
     const questionText = "A square has sides of 5 cm (all angles 90°). A rectangle has dimensions 4 cm × 6 cm (all angles 90°). Are they similar?";
@@ -252,7 +277,7 @@ export function generatePolygonSimilarityItem(id) {
     const distractor1 = "Yes — all four angles in both figures are 90°";
     const distractor2 = "Yes — because they are both four-sided quadrilaterals";
     const distractor3 = "Cannot tell without measuring the diagonals";
-    const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+    const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3]);
 
     return {
       id: `w4_q${id}`,
@@ -269,13 +294,12 @@ export function generatePolygonSimilarityItem(id) {
     };
   }
 
-  // rhombus vs square
   const questionText = "Two rhombuses have side lengths 6 cm and 12 cm. One has angles 90° (a square), and the other has angles 60° and 120°. Are they similar?";
   const correctAnswer = "No — the sides are proportional (1 : 2), but their corresponding angles are not equal";
   const distractor1 = "Yes — because all sides in both rhombuses are in the ratio 1 : 2";
   const distractor2 = "Yes — because all four sides are equal within each figure";
   const distractor3 = "Cannot tell without knowing the perimeter";
-  const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3]);
 
   return {
     id: `w4_q${id}`,
@@ -296,7 +320,7 @@ export function generatePolygonSimilarityItem(id) {
  * World 5: Triangle Tests (`similar-triangle-tests`)
  */
 export function generateTriangleTestItem(id) {
-  const testCase = pick(['aa', 'sss', 'sas', 'cannot-tell-one-angle', 'cannot-tell-ssa']);
+  const testCase = pick(['aa', 'sss', 'sas', 'cannot-tell']);
 
   if (testCase === 'aa') {
     const a1 = pick([40, 50, 60]);
@@ -306,7 +330,7 @@ export function generateTriangleTestItem(id) {
     const distractor1 = "Cannot tell — because the third angle is not given";
     const distractor2 = "Not similar — side lengths are not provided";
     const distractor3 = "Similar (SAS ratio)";
-    const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+    const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3]);
 
     return {
       id: `w5_q${id}`,
@@ -332,7 +356,7 @@ export function generateTriangleTestItem(id) {
     const distractor1 = "Cannot tell — no angles are given";
     const distractor2 = "Not similar — the sides are not equal lengths";
     const distractor3 = "Similar (AA)";
-    const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+    const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3]);
 
     return {
       id: `w5_q${id}`,
@@ -355,7 +379,7 @@ export function generateTriangleTestItem(id) {
     const distractor1 = "Cannot tell — the third side is not given";
     const distractor2 = "Similar (AA)";
     const distractor3 = "Not similar — sides must be equal";
-    const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+    const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3]);
 
     return {
       id: `w5_q${id}`,
@@ -372,13 +396,13 @@ export function generateTriangleTestItem(id) {
     };
   }
 
-  // Cannot tell case (SSA or only 1 angle)
+  // Cannot tell case
   const questionText = "Two triangles share one equal angle of 50° and no other information. What is the mathematically honest verdict?";
   const correctAnswer = "Cannot tell — one angle pair is not enough to prove similarity (counterexamples exist)";
   const distractor1 = "Similar (AA)";
   const distractor2 = "Definitely not similar";
   const distractor3 = "Similar (AAA)";
-  const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3]);
 
   return {
     id: `w5_q${id}`,
@@ -408,13 +432,12 @@ export function generateHiddenTriangleItem(id) {
   const questionText = `In △ABC, DE ∥ BC with D on AB and E on AC. Given AD = ${AD} cm, AB = ${AB} cm, and DE = ${DE} cm. Find the length of BC.`;
   const correctAnswer = `${BC} cm`;
 
-  // Distractors
   const diff = AB - AD;
-  const distractor1 = `${DE + diff} cm`; // Additive distractor
-  const distractor2 = `${DE * 2} cm`; // arbitrary double
-  const distractor3 = `${AD + DE} cm`; // arbitrary sum
+  const distractor1 = `${DE + diff} cm`;
+  const distractor2 = `${DE * (k + 1)} cm`;
+  const distractor3 = `${AD + DE + 2} cm`;
 
-  const options = shuffle(Array.from(new Set([correctAnswer, distractor1, distractor2, distractor3])));
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${BC + c * 3} cm`);
 
   return {
     id: `w6_q${id}`,
@@ -442,18 +465,17 @@ export function generateAreaVolumeItem(id) {
   const k = pick([2, 3, 4]);
 
   if (!isVolume) {
-    const areaA = pick([10, 20, 25, 40]);
+    const areaA = pick([10, 25, 40]);
     const areaB = areaA * Math.pow(k, 2);
 
     const questionText = `Two similar signs have scale factor k = ${k} (the large sign is ${k} times as long as the small one). The small sign has area ${areaA} cm². What is the area of the large sign?`;
     const correctAnswer = `${areaB} cm²`;
 
-    // Distractors
-    const distractor1 = `${areaA * k} cm²`; // Scaling area by k (misconception)
-    const distractor2 = `${areaA * Math.pow(k, 3)} cm²`; // Scaling area by k³
-    const distractor3 = `${areaA + k * 10} cm²`;
+    const distractor1 = `${areaA * k} cm²`; // scaled by k
+    const distractor2 = `${areaA * Math.pow(k, 3)} cm²`; // scaled by k³
+    const distractor3 = `${areaA * 2 + 5} cm²`;
 
-    const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+    const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${areaB + c * 20} cm²`);
 
     return {
       id: `w7_q${id}`,
@@ -477,11 +499,11 @@ export function generateAreaVolumeItem(id) {
   const questionText = `Two similar model vases have heights 10 cm and ${10 * k} cm. The small vase holds ${volA} mL of water. How much does the large vase hold?`;
   const correctAnswer = `${volB} mL`;
 
-  const distractor1 = `${volA * k} mL`; // Scaling volume by k (misconception)
-  const distractor2 = `${volA * Math.pow(k, 2)} mL`; // Scaling volume by k² (misconception)
-  const distractor3 = `${volA + 100 * k} mL`;
+  const distractor1 = `${volA * k} mL`; // scaled by k
+  const distractor2 = `${volA * Math.pow(k, 2)} mL`; // scaled by k²
+  const distractor3 = `${volA * 2 + 30} mL`;
 
-  const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${volB + c * 50} mL`);
 
   return {
     id: `w7_q${id}`,
@@ -504,18 +526,16 @@ export function generateAreaVolumeItem(id) {
 export function generateMapModelItem(id) {
   const scaleN = pick([10000, 50000, 100000]);
   const mapCm = pick([2, 4, 5, 8]);
-  // mapConvert(mapCm, scaleN, 'cm', 'km', 1)
   const realKm = (mapCm * scaleN) / 100000;
 
   const questionText = `A map has a scale of 1 : ${scaleN.toLocaleString()}. Two landmarks are ${mapCm} cm apart on the map. What is the actual distance between them in kilometres?`;
   const correctAnswer = `${realKm} km`;
 
-  // Distractors: unit slips (factor of 10 or 100 error)
   const distractor1 = `${realKm * 10} km`;
   const distractor2 = `${realKm / 10} km`;
-  const distractor3 = `${mapCm * scaleN} km`; // Forgot to convert cm to km
+  const distractor3 = `${(realKm * 2 + 1).toFixed(1).replace('.0', '')} km`;
 
-  const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+  const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${realKm + c} km`);
 
   return {
     id: `w8_q${id}`,
@@ -539,7 +559,6 @@ export function generateMixedReviewItem(id) {
   const subType = id % 4;
 
   if (subType === 0) {
-    // Hidden triangle + Area ratio combo
     const k = 3;
     const AD = 4;
     const AB = AD * k; // 12
@@ -548,11 +567,11 @@ export function generateMixedReviewItem(id) {
 
     const questionText = `In △ABC, DE ∥ BC with AD = ${AD} cm and AB = ${AB} cm. If the area of △ADE is ${areaSmall} cm², what is the area of △ABC?`;
     const correctAnswer = `${areaLarge} cm²`;
-    const distractor1 = `${areaSmall * k} cm²`; // scaled by k = 24
-    const distractor2 = `${areaSmall + (AB - AD)} cm²`;
-    const distractor3 = `${areaSmall * 2} cm²`;
+    const distractor1 = `${areaSmall * k} cm²`; // 24
+    const distractor2 = `${areaSmall * 2} cm²`; // 16
+    const distractor3 = `${areaSmall + 30} cm²`; // 38
 
-    const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+    const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${areaLarge + c * 10} cm²`);
 
     return {
       id: `w9_q${id}`,
@@ -570,25 +589,20 @@ export function generateMixedReviewItem(id) {
   }
 
   if (subType === 1) {
-    // Model volume scaling
     return generateAreaVolumeItem(id);
   }
 
   if (subType === 2) {
-    // Map area conversion (dimension 2)
     const scaleN = 10000;
     const mapAreaCm2 = 4;
-    // 1 cm = 10,000 cm = 100 m = 0.1 km
-    // 1 cm² = (0.1 km)² = 0.01 km²
-    // 4 cm² = 0.04 km²
     const realAreaKm2 = 0.04;
     const questionText = `A forest reserve covers ${mapAreaCm2} cm² on a 1 : 10 000 map. What is the actual area in square kilometres? (1 cm on map = 100 m in reality).`;
     const correctAnswer = `${realAreaKm2} km²`;
-    const distractor1 = "0.4 km²"; // linear slip
+    const distractor1 = "0.4 km²";
     const distractor2 = "4 km²";
-    const distractor3 = "40 000 m²";
+    const distractor3 = "0.08 km²";
 
-    const options = shuffle([correctAnswer, distractor1, distractor2, distractor3]);
+    const options = makeFourOptions(correctAnswer, [distractor1, distractor2, distractor3], (c) => `${c} km²`);
 
     return {
       id: `w9_q${id}`,
@@ -605,6 +619,5 @@ export function generateMixedReviewItem(id) {
     };
   }
 
-  // Subtype 3: Triangle similarity test & verdict
   return generateTriangleTestItem(id);
 }

@@ -99,9 +99,9 @@ export default function StoryPhase({ state, dispatch }) {
             {/* Character Badge */}
             <div className="story-character-badge">
               <div className="character-avatar-circle">
-                <span className="character-emoji">{panel.characterEmoji || '🐦'}</span>
+                <span className="character-emoji">{panel.characterEmoji || '🦦'}</span>
               </div>
-              <span className="character-name">{panel.character || 'Li Ting & Haikal'}</span>
+              <span className="character-name">{panel.character || 'Dania & Kabir'}</span>
             </div>
           </div>
         </div>

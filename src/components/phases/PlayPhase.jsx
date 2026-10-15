@@ -14,6 +14,7 @@ import {
   playHint1Narration,
   playHint2Narration,
   districtCompleteNarration,
+  practiceCompleteNarration,
 } from '../../utils/narration.js';
 
 export default function PlayPhase({ state, dispatch }) {
@@ -168,7 +169,7 @@ export default function PlayPhase({ state, dispatch }) {
           {/* Header row */}
           <div className="worlds-header-row">
             <div className="worlds-header-left">
-              <h2 className="worlds-title">Congruence Game Worlds</h2>
+              <h2 className="worlds-title">Similar Figures Game Worlds</h2>
               <p className="worlds-subtitle">
                 10 Themed Worlds · Need 4/10 Correct to Unlock Next World
               </p>

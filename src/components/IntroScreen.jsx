@@ -1,8 +1,10 @@
 // src/components/IntroScreen.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import './IntroScreen.css';
 import { generateSessionQuestions } from '../utils/shuffle.js';
 import questionBank from '../data/questionBank.js';
+import { useAudio } from '../hooks/useAudio.js';
+import { introNarration } from '../utils/narration.js';
 
 const JOURNEY = [
   { num: '01', icon: '🔍', label: 'Wonder',   desc: 'Statue paint mystery' },
@@ -13,15 +15,36 @@ const JOURNEY = [
 ];
 
 export default function IntroScreen({ state, dispatch }) {
+  const { narrate, stopAll } = useAudio(state?.audioEnabled ?? true);
   const hasSaved = state?.phaseComplete && Object.values(state.phaseComplete).some(Boolean);
 
+  useEffect(() => {
+    if (state?.audioEnabled) {
+      const timer = setTimeout(() => narrate(introNarration()), 600);
+      return () => { clearTimeout(timer); stopAll(); };
+    }
+    return () => stopAll();
+  }, [state?.audioEnabled, narrate, stopAll]);
+
+  function playGreeting() {
+    stopAll();
+    narrate(introNarration());
+  }
+
   function startFresh() {
+    stopAll();
     dispatch({ type: 'LOAD_QUESTIONS', payload: generateSessionQuestions(questionBank) });
     dispatch({ type: 'SET_PHASE', payload: 'wonder' });
   }
 
   function resumeSession() {
+    stopAll();
     dispatch({ type: 'SET_PHASE', payload: state.savedPhase || 'wonder' });
+  }
+
+  function handleSelectPhase(phase) {
+    stopAll();
+    dispatch({ type: 'SET_PHASE', payload: phase });
   }
 
   return (
@@ -39,10 +62,29 @@ export default function IntroScreen({ state, dispatch }) {
 
       {/* Mascot Row */}
       <div className="intro-mascot-row">
-        <div className="intro-mascot-circle">🦦</div>
+        <div className="intro-mascot-circle" onClick={playGreeting} title="Click to listen to Otto!" style={{ cursor: 'pointer' }}>
+          🦦
+        </div>
         <div className="intro-speech-bubble">
           Hi! I'm Otto the Otter. Ready to join Dania and Kabir at the scale-model exhibition hall,<br />
           find scale factors, test similarity, and discover why double length means four times the paint? 🦦📏
+          <button
+            type="button"
+            className="intro-listen-btn"
+            onClick={playGreeting}
+            aria-label="Listen to narration"
+            title="Listen to Otto"
+            style={{
+              marginLeft: '8px',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.05rem',
+              verticalAlign: 'middle',
+            }}
+          >
+            🔊
+          </button>
         </div>
       </div>
 
@@ -60,7 +102,7 @@ export default function IntroScreen({ state, dispatch }) {
             <React.Fragment key={j.num}>
               <div
                 className="journey-step-item clickable-step"
-                onClick={() => dispatch({ type: 'SET_PHASE', payload: j.label.toLowerCase() === 'practice' ? 'play' : j.label.toLowerCase() })}
+                onClick={() => handleSelectPhase(j.label.toLowerCase() === 'practice' ? 'play' : j.label.toLowerCase())}
                 role="button"
                 tabIndex={0}
                 title={`Click to open ${j.label} phase`}

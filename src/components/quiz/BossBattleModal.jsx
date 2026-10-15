@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import './BossBattleModal.css';
 import QuestionRenderer from './QuestionRenderer.jsx';
 import { useAudio } from '../../hooks/useAudio.js';
-import { bossStartNarration, bossWinNarration } from '../../utils/narration.js';
+import { bossStartNarration, bossWinNarration, bossDefeatNarration } from '../../utils/narration.js';
 
 export default function BossBattleModal({ boss, questions, onWin, onClose, audioEnabled }) {
   const { narrate, sounds } = useAudio(audioEnabled);
@@ -38,6 +38,7 @@ export default function BossBattleModal({ boss, questions, onWin, onClose, audio
       if (nextLives <= 0) {
         setLost(true);
         sounds.defeat();
+        narrate(bossDefeatNarration());
       }
     }
   }
@@ -51,7 +52,7 @@ export default function BossBattleModal({ boss, questions, onWin, onClose, audio
           </div>
           <h2 className="boss-title">{boss.name}</h2>
           <p className="boss-desc">
-            Answer {questions.length} congruence questions correctly to defeat the boss!
+            Answer {questions.length} similar figures questions correctly to defeat the boss!
           </p>
           <div className="boss-lives-preview">
             Lives: {'❤️'.repeat(3)}
@@ -100,7 +101,7 @@ export default function BossBattleModal({ boss, questions, onWin, onClose, audio
           </div>
           <h2 className="boss-title" style={{ color: 'var(--red-light)' }}>Out of Lives!</h2>
           <p className="boss-desc">
-            {boss.name} was too tricky! Review the congruence rules and challenge the boss again.
+            {boss.name} was too tricky! Review the similarity and scaling rules and challenge the boss again.
           </p>
           <button className="btn btn-primary" onClick={onClose}>
             Return to Practice
